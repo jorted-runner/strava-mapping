@@ -5,7 +5,11 @@ const axios = require('axios');
 var stravaData = null
 
 router.get('/', (req, res) => {
-    res.render('strava/index');
+    if (stravaData) {
+        res.render('strava/index', {loggedIn: true, firstName: stravaData.athlete.firstname, lastName: stravaData.athlete.lastname })
+    } else {
+        res.render('strava/index');
+    }
 })
 
 // Redirect user to Strava authorization URL
@@ -37,12 +41,16 @@ router.get('/callback', async (req, res) => {
         stravaData = tokenResponse.data
         console.log("Access Token Response:", stravaData);
 
-        res.render('strava/index', { loggedIn: true });
+        res.redirect('/strava');
     } catch (error) {
         console.error("Error getting access token:", error.response?.data || error.message);
         res.status(500).send("Failed to get access token.");
     }
 });
+
+router.get('/activities', (req, res) => {
+    
+})
 
 router.get('/token', (req, res) => {
     if (!stravaData) {

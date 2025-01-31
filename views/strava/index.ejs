@@ -10,7 +10,16 @@
     <h1>Strava Mapping Home</h1>
 
     <% if (locals.loggedIn) { %>
-        <p>Welcome</p>
+        <p>Welcome <%= locals.firstName %> <%= locals.lastName %>!</p>
+        <form>
+            <label for="diplayType">What would you like to display:</label>
+            <select id="displayType" name="types">
+                <option value="default" selected disabled>Select an option</option>
+                <option value="timePeriod">Activities from specific time period</option>
+                <option value="last10">Last 10 Activities</option>
+                <option value="starredSegments">Starred Segments</option>
+            </select>
+        </form>
     <% } else { %>
         <button id="loginButton">Login</button>
     <% } %>
