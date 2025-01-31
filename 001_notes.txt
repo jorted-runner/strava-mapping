@@ -1,3 +1,5 @@
 polyline is an encoded format of the lat/lon of an activity. Google maps has a polyline decoder.
 https://developers.google.com/maps/documentation/routes/polylinedecoder
 https://github.com/mapbox/polyline
+
+https://developers.google.com/maps/documentation/javascript/adding-a-google-map
