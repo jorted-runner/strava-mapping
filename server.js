@@ -7,6 +7,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(logger);
 app.set('view engine', 'ejs');
+require('dotenv').config();
 
 app.use('/strava', stravaRouter);
 
