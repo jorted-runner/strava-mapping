@@ -9,6 +9,10 @@ app.use(logger);
 app.set('view engine', 'ejs');
 require('dotenv').config();
 
+app.get('/', (req, res) => {
+	res.redirect('/strava')
+})
+
 app.use('/strava', stravaRouter);
 
 function logger(req, res, next) {

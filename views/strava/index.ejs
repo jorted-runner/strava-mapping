@@ -4,22 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strava Home</title>
-    <script defer src="/scripts/index.js"></script>
+    <link rel="stylesheet" href="/styles/main.css">
+    <script defer src="/scripts/strava.js"></script>
 </head>
 <body>
     <h1>Strava Mapping Home</h1>
 
     <% if (locals.loggedIn) { %>
         <p>Welcome <%= locals.firstName %> <%= locals.lastName %>!</p>
-        <form>
-            <label for="diplayType">What would you like to display:</label>
-            <select id="displayType" name="types">
+        <form id="firstForm">
+            <label for="displayType">What would you like to display:</label>
+            <select id="displayType" name="displayType">
                 <option value="default" selected disabled>Select an option</option>
+                <option value="last20">Last 20 Activities</option>
                 <option value="timePeriod">Activities from specific time period</option>
-                <option value="last10">Last 10 Activities</option>
                 <option value="starredSegments">Starred Segments</option>
             </select>
+            <label class="hidden inputLabel" for="startDate"> Start Date
+                <input id="startDate" type="text">
+            </label>
+            <label class="hidden inputLabel"> End Date
+                <input type="text">
+            </label>
+            <button type="button" class="hidden" id="displayButton">Show Activities</button>
         </form>
+        <ul id="activityList"></ul>
+
     <% } else { %>
         <button id="loginButton">Login</button>
     <% } %>

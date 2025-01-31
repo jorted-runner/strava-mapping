@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
 
 // Redirect user to Strava authorization URL
 router.get('/login', (req, res) => {
-    const authUrl = `http://www.strava.com/oauth/authorize?client_id=${process.env.clientId}&response_type=code&redirect_uri=http://localhost:8080/strava/callback&approval_prompt=force&scope=read`;
+    const authUrl = `http://www.strava.com/oauth/authorize?client_id=${process.env.clientId}&response_type=code&redirect_uri=http://localhost:8080/strava/callback&approval_prompt=force&scope=read,activity:read`;
 
     res.redirect(authUrl);
 });
@@ -48,9 +48,26 @@ router.get('/callback', async (req, res) => {
     }
 });
 
-router.get('/activities', (req, res) => {
-    
-})
+// Fetch last 20 activities from Strava
+router.get('/20activities', async (req, res) => {
+    try {
+        if (!stravaData) {
+            return res.status(401).send("Strava access token not found. Please authenticate.");
+        }
+        console.log(stravaData.access_token)
+        const activitiesResponse = await axios.get(
+            'https://www.strava.com/api/v3/athlete/activities',
+            {
+                headers: { Authorization: `Bearer ${stravaData.access_token}` },
+                params: { page: 1, per_page: 20 }
+            }
+        );
+        res.json(activitiesResponse.data);
+    } catch (error) {
+        console.error("Error fetching activities:", error.response?.data || error.message);
+        res.status(500).send("Failed to retrieve activities.");
+    }
+});
 
 router.get('/token', (req, res) => {
     if (!stravaData) {
