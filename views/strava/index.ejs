@@ -6,6 +6,7 @@
     <title>Strava Home</title>
     <link rel="stylesheet" href="/styles/main.css">
     <script defer src="/scripts/strava.js"></script>
+    <script defer src="/scripts/map.js"></script>
 </head>
 <body>
     <h1>Strava Mapping Home</h1>
@@ -28,7 +29,7 @@
             </label>
             <button type="button" class="hidden" id="displayButton">Show Activities</button>
         </form>
-        <ul id="activityList"></ul>
+        <div id="map"></div>
 
     <% } else { %>
         <button id="loginButton">Login</button>
