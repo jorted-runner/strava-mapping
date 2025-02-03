@@ -6,7 +6,12 @@ var stravaData = null
 
 router.get('/', (req, res) => {
     if (stravaData) {
-        res.render('strava/index', {loggedIn: true, firstName: stravaData.athlete.firstname, lastName: stravaData.athlete.lastname })
+        res.render('strava/index', {
+					loggedIn: true,
+					firstName: stravaData.athlete.firstname,
+					lastName: stravaData.athlete.lastname,
+					apiKEY: process.env.googleAPI,
+				});
     } else {
         res.render('strava/index');
     }
@@ -54,7 +59,6 @@ router.get('/20activities', async (req, res) => {
         if (!stravaData) {
             return res.status(401).send("Strava access token not found. Please authenticate.");
         }
-        console.log(stravaData.access_token)
         const activitiesResponse = await axios.get(
             'https://www.strava.com/api/v3/athlete/activities',
             {
