@@ -6,7 +6,8 @@ async function initMap(lat, long) {
 
 	map = new Map(document.getElementById('map'), {
 		center: { lat: lat, lng: long },
-		zoom: 12,
+		zoom: 10,
+		mapTypeId: 'terrain'
 	});
 }
 
@@ -15,7 +16,9 @@ async function createPolyline(polyline_data, color, content, title) {
 
 	// Decode the polyline using Google Maps API utility
 	const path = encoding.decodePath(polyline_data);
-
+  	const lineSymbol = {
+		path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+	};
 	// Draw the polyline on the map
 	const polyline = new google.maps.Polyline({
 		path: path,
@@ -23,6 +26,12 @@ async function createPolyline(polyline_data, color, content, title) {
 		strokeColor: color,
 		strokeOpacity: 1.0,
 		strokeWeight: 2,
+		icons: [
+			{
+				icon: lineSymbol,
+				offset: '100%',
+			},
+		],
 	});
 
 	polyline.setMap(map);
@@ -54,17 +63,46 @@ async function createPolyline(polyline_data, color, content, title) {
 	});
 }
 
-function createContent(activity) {
-	console.log(activity)
-	return {
-		content: `<h1>${activity.name}</h1><p>Distance: ${(
-			activity.distance * 0.000621371
-		).toFixed(2)} miles</p><p>Time: ${(activity.moving_time / 60).toFixed(1)} minutes</p>`,
-		title: 'Activity Title',
-	};
-}
+function populateMap(data, type) {
+	const colors = new Set();
+	data.forEach((item) => {
+		let randomColor;
+		// Generate a unique color
+		do {
+			randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+		} while (colors.has(randomColor));
 
-const activities = [];
+			colors.add(randomColor);
+
+			let content;
+			let title;
+			let polyline;
+
+			if (type === 'activity') {
+				const date = new Date(item.start_date);
+
+				const formattedDate = date.toLocaleDateString('en-US', {
+					month: '2-digit',
+					day: '2-digit',
+					year: 'numeric',
+				});
+				content = `<h1>${item.name}</h1><p>Date: ${formattedDate}</p><p>Distance: ${(
+						item.distance * 0.000621371
+					).toFixed(2)} miles</p><p>Time: ${(item.moving_time / 60).toFixed(1)} minutes</p>`
+				polyline = item.map?.summary_polyline
+				title = 'Activity Data'
+			} else {
+				content = `<h1>${item.name}</h1><p>Distance: ${(
+					item.distance * 0.000621371
+				).toFixed(2)} miles</p><p>Total Elevation Gain: ${
+					item.total_elevation_gain
+				} feet</p>`;
+				title = "Segment Data"
+				polyline = item.map?.polyline
+			}
+			createPolyline(polyline, randomColor, content, title);
+	});		
+}
 
 const loginButton = document.querySelector('#loginButton');
 
@@ -102,30 +140,38 @@ displayButton.addEventListener('click', async (event) => {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
 			data = await response.json();
-			const colors = [];
 			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-			data.forEach((activity) => {
-				let randomColor;
-				// Generate a unique color
-				do {
-					randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-				} while (colors.includes(randomColor));
-				colors.push(randomColor);
-				const { content, title } = createContent(activity);
-				createPolyline(
-					activity.map.summary_polyline,
-					randomColor,
-					content,
-					title
-				);
-			});			
+			populateMap(data, 'activity')	
 		} else if (select.value == 'starredSegments') {
-			response = await fetch('http://localhost:8080/strava/starredsegments'); // Adjust for your backend URL
+			response = await fetch('http://localhost:8080/strava/starredsegments');
 			if (!response.ok) {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
 			data = await response.json();
-			console.log(data)
+			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
+			populateMap(data, 'segments');	
+		} else {
+			const startDateInput = document.querySelector('#startDate');
+			const endDateInput = document.querySelector('#endDate');
+
+			const startDate = startDateInput?.value;
+			const endDate = endDateInput?.value;
+
+			if (!startDate || !endDate) {
+				console.error('Start or End date is missing!');
+				return;
+			}
+
+			// Continue with your fetch request
+			response = await fetch(
+				`http://localhost:8080/strava/activities?start=${startDate}&end=${endDate}`
+			);
+			if (!response.ok) {
+				throw new Error(`HTTP error! Status: ${response.status}`);
+			}
+			data = await response.json();
+			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
+			populateMap(data, 'activity');
 		}
 		resetInputs();
 	} catch (error) {

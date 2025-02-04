@@ -89,7 +89,7 @@ router.get('/starredsegments', async (req, res) => {
         );
         const rawData = segmentsResponse.data;
         const detailedSegments = await Promise.all(
-            rawData.forEach(async (segment) => {
+            rawData.map(async (segment) => {
                 const segmentResponse = await axios.get(
                 `https://www.strava.com/api/v3/segments/${segment.id}`,
                 {
@@ -103,6 +103,57 @@ router.get('/starredsegments', async (req, res) => {
         console.error('Error fetching starred segments:', error.response?.data || error.message);
         res.status(500).send('Failed to retrieve starred segments.');
     }
+});
+
+router.get('/activities', async (req, res) => {
+	try {
+		// Extract start and end dates from query parameters
+		const { start, end } = req.query;
+
+		if (!start || !end) {
+			return res.status(400).send('Missing start or end date.');
+		}
+
+		// Convert start and end dates to Unix timestamps (seconds)
+		const afterTimestamp = Math.floor(new Date(start).getTime() / 1000);
+		const beforeTimestamp = Math.floor(new Date(end).getTime() / 1000);
+
+		console.log(
+			`Fetching activities from ${afterTimestamp} to ${beforeTimestamp}`
+		);
+
+		// Ensure Strava access token is available
+		if (!stravaData || !stravaData.access_token) {
+			return res
+				.status(401)
+				.send('Strava access token not found. Please authenticate.');
+		}
+
+		// Make request to Strava API
+		const response = await axios.get(
+			'https://www.strava.com/api/v3/athlete/activities',
+			{
+				headers: {
+					Authorization: `Bearer ${stravaData.access_token}`,
+				},
+				params: {
+					after: afterTimestamp, // Filter activities after this timestamp
+					before: beforeTimestamp, // Filter activities before this timestamp
+					page: 1,
+					per_page: 100, // Adjust if needed
+				},
+			}
+		);
+
+		// Send the activities data as response
+		res.json(response.data);
+	} catch (error) {
+		console.error(
+			'Error fetching activities:',
+			error.response?.data || error.message
+		);
+		res.status(500).send('Failed to retrieve activities.');
+	}
 });
 
 router.get('/token', (req, res) => {
