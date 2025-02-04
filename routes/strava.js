@@ -4,7 +4,9 @@ const axios = require('axios');
 
 var stravaData = null
 
+// build default strava page
 router.get('/', (req, res) => {
+    // check if app has stored strava data and if it does pass some of the data to the front end html
     if (stravaData) {
         res.render('strava/index', {
 					loggedIn: true,
@@ -73,6 +75,7 @@ router.get('/20activities', async (req, res) => {
     }
 });
 
+// Fetch starred segments
 router.get('/starredsegments', async (req, res) => {
     try {
         if (!stravaData) {
@@ -80,13 +83,15 @@ router.get('/starredsegments', async (req, res) => {
                 .status(401)
                 .send('Strava access token not found. Please authenticate.');
         }
+        // Make request to strava to get list of starred segments
         const segmentsResponse = await axios.get(
             'https://www.strava.com/api/v3/segments/starred',
             {
                 headers: { Authorization: `Bearer ${stravaData.access_token}` },
-                params: { page: 1, per_page: 10 },
+                params: { page: 1, per_page: 50 },
             }
         );
+        // Process list of starred segments - get more detailed information about each starred segment to allow it to be displayed
         const rawData = segmentsResponse.data;
         const detailedSegments = await Promise.all(
             rawData.map(async (segment) => {
@@ -105,6 +110,7 @@ router.get('/starredsegments', async (req, res) => {
     }
 });
 
+// Fetch all activities from specified time period - limited to 50 activities
 router.get('/activities', async (req, res) => {
 	try {
 		// Extract start and end dates from query parameters
@@ -117,10 +123,6 @@ router.get('/activities', async (req, res) => {
 		// Convert start and end dates to Unix timestamps (seconds)
 		const afterTimestamp = Math.floor(new Date(start).getTime() / 1000);
 		const beforeTimestamp = Math.floor(new Date(end).getTime() / 1000);
-
-		console.log(
-			`Fetching activities from ${afterTimestamp} to ${beforeTimestamp}`
-		);
 
 		// Ensure Strava access token is available
 		if (!stravaData || !stravaData.access_token) {
@@ -140,12 +142,11 @@ router.get('/activities', async (req, res) => {
 					after: afterTimestamp, // Filter activities after this timestamp
 					before: beforeTimestamp, // Filter activities before this timestamp
 					page: 1,
-					per_page: 100, // Adjust if needed
+					per_page: 50, // Adjust if needed
 				},
 			}
 		);
 
-		// Send the activities data as response
 		res.json(response.data);
 	} catch (error) {
 		console.error(
@@ -156,6 +157,7 @@ router.get('/activities', async (req, res) => {
 	}
 });
 
+// Route to return strava data if it is being stored. Not used anywhere, but may get implemented in the future
 router.get('/token', (req, res) => {
     if (!stravaData) {
         return res.status(404).send("Token not found.")
