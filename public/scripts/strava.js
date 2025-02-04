@@ -1,5 +1,8 @@
 let map;
+const loginButton = document.querySelector('#loginButton');
+const select = document.querySelector('#displayType');
 
+// create a map object
 async function initMap(lat, long) {
 	//@ts-ignore
 	const { Map } = await google.maps.importLibrary('maps');
@@ -11,6 +14,7 @@ async function initMap(lat, long) {
 	});
 }
 
+// create polyline and marker, add to map object
 async function createPolyline(polyline_data, color, content, title) {
 	const { encoding } = await google.maps.importLibrary('geometry'); // Import geometry library for decodePath
 
@@ -19,6 +23,7 @@ async function createPolyline(polyline_data, color, content, title) {
   	const lineSymbol = {
 		path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
 	};
+
 	// Draw the polyline on the map
 	const polyline = new google.maps.Polyline({
 		path: path,
@@ -63,6 +68,7 @@ async function createPolyline(polyline_data, color, content, title) {
 	});
 }
 
+// function to process data sent from the server
 function populateMap(data, type) {
 	const colors = new Set();
 	data.forEach((item) => {
@@ -78,6 +84,7 @@ function populateMap(data, type) {
 			let title;
 			let polyline;
 
+			// if it is a segment or an activity the item needs to be processed slightly different.
 			if (type === 'activity') {
 				const date = new Date(item.start_date);
 
@@ -104,16 +111,14 @@ function populateMap(data, type) {
 	});		
 }
 
-const loginButton = document.querySelector('#loginButton');
-
+// If the login button exists and an event listener to allow the user to login to their strava
 if (loginButton) {
 	loginButton.addEventListener('click', () => {
 		window.location.href = '/strava/login';
 	});
 }
 
-const select = document.querySelector('#displayType');
-
+// add an event listener to the dropdown. If it changes to time period unhide the date inputs
 if (select) {
 	select.addEventListener('change', (event) => {
 		const selection = event.target.value;
@@ -128,56 +133,62 @@ if (select) {
 	});
 }
 
-displayButton.addEventListener('click', async (event) => {
-	try {
-		let response;
-		let data;
-		if (select.value == 'last20') {
-			response = await fetch(
-				'http://localhost:8080/strava/20activities'
-			); // Adjust for your backend URL
-			if (!response.ok) {
-				throw new Error(`HTTP error! Status: ${response.status}`);
-			}
-			data = await response.json();
-			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-			populateMap(data, 'activity')	
-		} else if (select.value == 'starredSegments') {
-			response = await fetch('http://localhost:8080/strava/starredsegments');
-			if (!response.ok) {
-				throw new Error(`HTTP error! Status: ${response.status}`);
-			}
-			data = await response.json();
-			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-			populateMap(data, 'segments');	
-		} else {
-			const startDateInput = document.querySelector('#startDate');
-			const endDateInput = document.querySelector('#endDate');
+// add an event listener to the displayButton which will perform the server calls and then send the data to be displayed on the map
+if (displayButton) {
+	displayButton.addEventListener('click', async (event) => {
+		try {
+			let response;
+			let data;
+			let dataType;
 
-			const startDate = startDateInput?.value;
-			const endDate = endDateInput?.value;
-
-			if (!startDate || !endDate) {
-				console.error('Start or End date is missing!');
-				return;
+			if (select.value == 'last20') {
+				response = await fetch('http://localhost:8080/strava/20activities');
+				if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				}
+				data = await response.json();
+				dataType = 'activity'
 			}
-
-			// Continue with your fetch request
-			response = await fetch(
-				`http://localhost:8080/strava/activities?start=${startDate}&end=${endDate}`
-			);
-			if (!response.ok) {
-				throw new Error(`HTTP error! Status: ${response.status}`);
+			else if (select.value == 'starredSegments') {
+				response = await fetch('http://localhost:8080/strava/starredsegments');
+				if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				}
+				data = await response.json();
+				dataType = 'segments'
 			}
-			data = await response.json();
+			else {
+				const startDateInput = document.querySelector('#startDate');
+				const endDateInput = document.querySelector('#endDate');
+
+				const startDate = startDateInput?.value;
+				const endDate = endDateInput?.value;
+
+				if (!startDate || !endDate) {
+					console.error('Start or End date is missing!');
+					return;
+				}
+
+				response = await fetch(
+					`http://localhost:8080/strava/activities?start=${startDate}&end=${endDate}`
+				);
+				if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				}
+				data = await response.json();
+				dataType = 'activity'
+			}
+			// initialize the map and then populate the map with the correct data
 			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-			populateMap(data, 'activity');
+			populateMap(data, dataType);
+
+			// reset the form
+			resetInputs();
+		} catch (error) {
+			console.error('Error fetching activities:', error);
 		}
-		resetInputs();
-	} catch (error) {
-		console.error('Error fetching activities:', error);
-	}
-});
+	});
+}
 
 function resetInputs() {
 		select.value = 'default';
