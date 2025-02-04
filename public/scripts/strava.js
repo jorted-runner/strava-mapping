@@ -1,8 +1,11 @@
+// Global map variable
 let map;
+
+// Get references to UI elements
 const loginButton = document.querySelector('#loginButton');
 const select = document.querySelector('#displayType');
 
-// create a map object
+// Initialize the Google Maps centered at the given latitude and longitude
 async function initMap(lat, long) {
 	//@ts-ignore
 	const { Map } = await google.maps.importLibrary('maps');
@@ -14,7 +17,7 @@ async function initMap(lat, long) {
 	});
 }
 
-// create polyline and marker, add to map object
+// Create a polyline on the map and add an interactive info window
 async function createPolyline(polyline_data, color, content, title) {
 	const { encoding } = await google.maps.importLibrary('geometry'); // Import geometry library for decodePath
 
@@ -68,12 +71,12 @@ async function createPolyline(polyline_data, color, content, title) {
 	});
 }
 
-// function to process data sent from the server
+// Process and display activity or segment data on the map
 function populateMap(data, type) {
 	const colors = new Set();
 	data.forEach((item) => {
 		let randomColor;
-		// Generate a unique color
+		// Generate a unique color for each polyline
 		do {
 			randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 		} while (colors.has(randomColor));
@@ -84,8 +87,8 @@ function populateMap(data, type) {
 			let title;
 			let polyline;
 
-			// if it is a segment or an activity the item needs to be processed slightly different.
 			if (type === 'activity') {
+				// Format the activity data for display
 				const date = new Date(item.start_date);
 
 				const formattedDate = date.toLocaleDateString('en-US', {
@@ -99,6 +102,7 @@ function populateMap(data, type) {
 				polyline = item.map?.summary_polyline
 				title = 'Activity Data'
 			} else {
+				// Format the segment data for display
 				content = `<h1>${item.name}</h1><p>Distance: ${(
 					item.distance * 0.000621371
 				).toFixed(2)} miles</p><p>Total Elevation Gain: ${
@@ -125,6 +129,8 @@ if (select) {
 		const dateInputs = document.querySelectorAll('.inputLabel');
 		const displayButton = document.querySelector('#displayButton');
 		displayButton.classList.remove('hidden');
+
+		// Show date inputs only when "time period" is selected
 		if (selection == 'timePeriod') {
 			dateInputs.forEach((input) => {
 				input.classList.remove('hidden');
@@ -140,7 +146,7 @@ if (displayButton) {
 			let response;
 			let data;
 			let dataType;
-
+			// Determine which API endpoint to fetch data from
 			if (select.value == 'last20') {
 				response = await fetch('http://localhost:8080/strava/20activities');
 				if (!response.ok) {
@@ -158,6 +164,7 @@ if (displayButton) {
 				dataType = 'segments'
 			}
 			else {
+				// Fetch activities for a specified date range
 				const startDateInput = document.querySelector('#startDate');
 				const endDateInput = document.querySelector('#endDate');
 
@@ -190,14 +197,15 @@ if (displayButton) {
 	});
 }
 
+// Reset dropdown selection and hide unnecessary inputs
 function resetInputs() {
-		select.value = 'default';
-		const dateInputs = document.querySelectorAll('.inputLabel');
-		const displayButton = document.querySelector('#displayButton');
-		displayButton.classList.add('hidden');
-		dateInputs.forEach((input) => {
-			if (!input.classList.contains('hidden')) {
-				input.classList.add('hidden');
-			}
-		});
+	select.value = 'default';
+	const dateInputs = document.querySelectorAll('.inputLabel');
+	const displayButton = document.querySelector('#displayButton');
+	displayButton.classList.add('hidden');
+	dateInputs.forEach((input) => {
+		if (!input.classList.contains('hidden')) {
+			input.classList.add('hidden');
+		}
+	});
 }
