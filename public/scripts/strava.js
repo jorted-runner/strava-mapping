@@ -51,36 +51,39 @@ if (select) {
 				input.classList.remove('hidden');
 			});
 		}
+	});
+}
 
-		displayButton.addEventListener('click', async (event) => {
-			try {
-				if (select.value == 'last20') {
-					const response = await fetch(
-						'http://localhost:8080/strava/20activities'
-					); // Adjust for your backend URL
-					if (!response.ok) {
-						throw new Error(`HTTP error! Status: ${response.status}`);
-					}
-					const data = await response.json();
-					data.forEach((activity) => {
-                        activities.push(activity)
-					});
-                    console.log(activities[0]);
-                    initMap(activities[0].map.summary_polyline);
-				}
+displayButton.addEventListener('click', async (event) => {
+	try {
+		if (select.value == 'last20') {
+			const response = await fetch(
+				'http://localhost:8080/strava/20activities'
+			); // Adjust for your backend URL
+			if (!response.ok) {
+				throw new Error(`HTTP error! Status: ${response.status}`);
+			}
+			const data = await response.json();
+			data.forEach((activity) => {
+				activities.push(activity);
+			});
+			console.log(activities[0]);
+			initMap(activities[0].map.summary_polyline);
+		}
+		resetInputs();
+	} catch (error) {
+		console.error('Error fetching activities:', error);
+	}
+});
 
-				select.value = 'default';
-				const dateInputs = document.querySelectorAll('.inputLabel');
-				const displayButton = document.querySelector('#displayButton');
-				displayButton.classList.add('hidden');
-				dateInputs.forEach((input) => {
-					if (!input.classList.contains('hidden')) {
-						input.classList.add('hidden');
-					}
-				});
-			} catch (error) {
-				console.error('Error fetching activities:', error);
+function resetInputs() {
+		select.value = 'default';
+		const dateInputs = document.querySelectorAll('.inputLabel');
+		const displayButton = document.querySelector('#displayButton');
+		displayButton.classList.add('hidden');
+		dateInputs.forEach((input) => {
+			if (!input.classList.contains('hidden')) {
+				input.classList.add('hidden');
 			}
 		});
-	});
 }
