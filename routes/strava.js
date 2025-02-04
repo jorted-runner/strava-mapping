@@ -75,10 +75,33 @@ router.get('/20activities', async (req, res) => {
 
 router.get('/starredsegments', async (req, res) => {
     try {
-
+        if (!stravaData) {
+            return res
+                .status(401)
+                .send('Strava access token not found. Please authenticate.');
+        }
+        const segmentsResponse = await axios.get(
+            'https://www.strava.com/api/v3/segments/starred',
+            {
+                headers: { Authorization: `Bearer ${stravaData.access_token}` },
+                params: { page: 1, per_page: 10 },
+            }
+        );
+        const rawData = segmentsResponse.data;
+        const detailedSegments = await Promise.all(
+            rawData.forEach(async (segment) => {
+                const segmentResponse = await axios.get(
+                `https://www.strava.com/api/v3/segments/${segment.id}`,
+                {
+                    headers: { Authorization: `Bearer ${stravaData.access_token}` }
+                });
+                return segmentResponse.data
+            })
+        );
+        res.json(detailedSegments);
     } catch (error) {
-        console.error('Error fetching activities:', error.response?.data || error.message);
-        res.status(500).send('Failed to retrieve activities.');
+        console.error('Error fetching starred segments:', error.response?.data || error.message);
+        res.status(500).send('Failed to retrieve starred segments.');
     }
 });
 

@@ -93,7 +93,7 @@ if (select) {
 displayButton.addEventListener('click', async (event) => {
 	try {
 		let response;
-		let date;
+		let data;
 		if (select.value == 'last20') {
 			response = await fetch(
 				'http://localhost:8080/strava/20activities'
@@ -102,25 +102,31 @@ displayButton.addEventListener('click', async (event) => {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
 			data = await response.json();
-		} else if (select.value == "") {
+			const colors = [];
+			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
+			data.forEach((activity) => {
+				let randomColor;
+				// Generate a unique color
+				do {
+					randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+				} while (colors.includes(randomColor));
+				colors.push(randomColor);
+				const { content, title } = createContent(activity);
+				createPolyline(
+					activity.map.summary_polyline,
+					randomColor,
+					content,
+					title
+				);
+			});			
+		} else if (select.value == 'starredSegments') {
 			response = await fetch('http://localhost:8080/strava/starredsegments'); // Adjust for your backend URL
 			if (!response.ok) {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
 			data = await response.json();
+			console.log(data)
 		}
-		const colors = []
-		initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-		data.forEach((activity) => {
-			let randomColor;
-			// Generate a unique color
-			do {
-				randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-			} while (colors.includes(randomColor));
-				colors.push(randomColor);
-				const { content, title } = createContent(activity);
-				createPolyline(activity.map.summary_polyline, randomColor, content, title);
-			});			
 		resetInputs();
 	} catch (error) {
 		console.error('Error fetching activities:', error);
