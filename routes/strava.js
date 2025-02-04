@@ -73,6 +73,15 @@ router.get('/20activities', async (req, res) => {
     }
 });
 
+router.get('/starredsegments', async (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error('Error fetching activities:', error.response?.data || error.message);
+        res.status(500).send('Failed to retrieve activities.');
+    }
+});
+
 router.get('/token', (req, res) => {
     if (!stravaData) {
         return res.status(404).send("Token not found.")

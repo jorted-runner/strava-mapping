@@ -10,23 +10,58 @@ async function initMap(lat, long) {
 	});
 }
 
-async function createPolyline(polyline_data, color) {
+async function createPolyline(polyline_data, color, content, title) {
 	const { encoding } = await google.maps.importLibrary('geometry'); // Import geometry library for decodePath
 
 	// Decode the polyline using Google Maps API utility
-	const path = encoding.decodePath(polyline_data); // Use the correct import for decoding
+	const path = encoding.decodePath(polyline_data);
 
 	// Draw the polyline on the map
 	const polyline = new google.maps.Polyline({
-		// Directly use google.maps.Polyline
 		path: path,
 		geodesic: true,
 		strokeColor: color,
 		strokeOpacity: 1.0,
 		strokeWeight: 2,
 	});
-	// I need to add a marker to each polyline. I want it to just show up when the user clicks on the line
+
 	polyline.setMap(map);
+
+	// Create a marker at the midpoint of the polyline
+	const midpointIndex = Math.floor(path.length / 2);
+	const marker = new google.maps.Marker({
+		position: path[midpointIndex], // Set marker at midpoint
+		map: map,
+		visible: false, // Hide marker initially
+	});
+
+	// InfoWindow setup
+	const infoWindow = new google.maps.InfoWindow({
+		content: content,
+		ariaLabel: title,
+	});
+
+	// Show marker & InfoWindow on polyline click
+	polyline.addListener('click', () => {
+		marker.setVisible(true); // Show marker
+		infoWindow.open(map, marker);
+	});
+
+	// Hide InfoWindow & marker on map click
+	map.addListener('click', () => {
+		marker.setVisible(false);
+		infoWindow.close();
+	});
+}
+
+function createContent(activity) {
+	console.log(activity)
+	return {
+		content: `<h1>${activity.name}</h1><p>Distance: ${(
+			activity.distance * 0.000621371
+		).toFixed(2)} miles</p><p>Time: ${(activity.moving_time / 60).toFixed(1)} minutes</p>`,
+		title: 'Activity Title',
+	};
 }
 
 const activities = [];
@@ -57,26 +92,35 @@ if (select) {
 
 displayButton.addEventListener('click', async (event) => {
 	try {
+		let response;
+		let date;
 		if (select.value == 'last20') {
-			const response = await fetch(
+			response = await fetch(
 				'http://localhost:8080/strava/20activities'
 			); // Adjust for your backend URL
 			if (!response.ok) {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
-			const data = await response.json();
-			const colors = []
-			initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
-			data.forEach((activity) => {
-				let randomColor;
-				// Generate a unique color
-				do {
-					randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-				} while (colors.includes(randomColor));
-					colors.push(randomColor);
-					createPolyline(activity.map.summary_polyline, randomColor);
-				});			
+			data = await response.json();
+		} else if (select.value == "") {
+			response = await fetch('http://localhost:8080/strava/starredsegments'); // Adjust for your backend URL
+			if (!response.ok) {
+				throw new Error(`HTTP error! Status: ${response.status}`);
+			}
+			data = await response.json();
 		}
+		const colors = []
+		initMap(data[0]['end_latlng'][0], data[0]['end_latlng'][1]);
+		data.forEach((activity) => {
+			let randomColor;
+			// Generate a unique color
+			do {
+				randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+			} while (colors.includes(randomColor));
+				colors.push(randomColor);
+				const { content, title } = createContent(activity);
+				createPolyline(activity.map.summary_polyline, randomColor, content, title);
+			});			
 		resetInputs();
 	} catch (error) {
 		console.error('Error fetching activities:', error);
