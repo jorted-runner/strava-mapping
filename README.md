@@ -13,7 +13,7 @@ The software fetches **Strava activity data** using an authenticated API request
 
 The data source for this project is the **Strava API**, which provides detailed activity data based on the user's account.
 
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video](https://youtu.be/45GKkBkBHK0)
 
 ---
 
